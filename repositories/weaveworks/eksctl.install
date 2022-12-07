@@ -9,7 +9,17 @@ ASSET_DIR="$2"
 
 cd "$ASSET_DIR"
 
-sha256sum --check --ignore-missing --quiet eksctl_checksums.txt
+PLATFORM=$(uname)
+if [ "$PLATFORM" = "Darwin" ]; then
+  SHASUM_CMD="shasum --algorithm 256"
+elif [ "$PLATFORM" = "Linux" ]; then
+  SHASUM_CMD="sha256sum"
+else
+  echo >&2 "ERROR: no shasum mapping for platform $PLATFORM!"
+  exit 1
+fi
+
+$SHASUM_CMD --check --ignore-missing --quiet eksctl_checksums.txt
 
 tar xzf eksctl_*.tar.gz
 
