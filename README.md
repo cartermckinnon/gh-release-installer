@@ -7,7 +7,7 @@ A tool for installing software from GitHub releases.
 ## Setup
 
 1. Make sure `gh-release-installer` is on your `PATH`.
-2. *(Optional)* Symlink existing repository configurations for to `$HOME/.gh-release-installer`.
+2. *(Optional)* Symlink existing repository configurations to `$HOME/.gh-release-installer`.
 ```
 ln -s $(pwd)/repositories $HOME/.gh-release-installer
 ```
@@ -24,7 +24,7 @@ Or to install a specific release, identified by the corresponding tag:
 gh-release-installer myorg/myrepo v1.0.0
 ```
 
-## Adding support for a repository
+### Adding support for a repository
 
 `gh-release-installer` delegates the details of individual repositories to configuration files, expected to be at `$HOME/.gh-release-installer`.
 The structure of this directory is expected to look like:
@@ -51,3 +51,7 @@ This executable will be invoked like:
 ```
 my-repo.install "v1.0.0" "/tmp/myassets"
 ```
+
+#### 🤔 Isn't this just a big bash script?
+
+Shhh.
