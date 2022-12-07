@@ -26,27 +26,17 @@ function info() {
 }
 
 function get-latest-release-tag-authenticated() {
-  if [ "$#" -ne 1 ]; then
-    echo >&2 "usage: $0 REPOSITORY_NAME"
-    return 1
-  fi
   local REPOSITORY_NAME="$1"
   gh api "/repos/$REPOSITORY_NAME/releases" | jq -r '.[] | select(.prerelease == false) | .tag_name' | head -n1
 }
 
 function get-latest-release-tag-anonymous() {
-  if [ "$#" -ne 1 ]; then
-    stderr "usage: $0 REPOSITORY_NAME"
-    return 1
-  fi
   local REPOSITORY_NAME="$1"
   FAILED=false
   OUTPUT_FILE=$(mktemp)
   HTTP_CODE=$(curl --silent --output $OUTPUT_FILE --write-out "%{http_code}" "https://api.github.com/repos/$REPOSITORY_NAME/releases")
   if [ ${HTTP_CODE} -eq 200 ]; then
-    cat $OUTPUT_FILE \
-      | jq -r '.[] | select(.prerelease == false) | .tag_name' \
-      | head -n1
+    cat $OUTPUT_FILE | jq -r '.[] | select(.prerelease == false) | .tag_name' | head -n1
   elif [ $HTTP_CODE -eq 403 ]; then
     error "GitHub API request was rate-limited; you should set up the GitHub CLI so your requests aren't anonymous!"
   else
@@ -88,16 +78,12 @@ if [ "$TAG" = "" ]; then
   info "Determining the latest release..."
   if ! command -v gh &> /dev/null; then
     TAG=$(get-latest-release-tag-anonymous "$REPO")
-    if [ "$TAG" = "" ]; then
-      # get-latest-release-anonymous will log its own message
-      exit 3
-    fi
   else
     TAG=$(get-latest-release-tag-authenticated "$REPO")
-    if [ "$TAG" = "" ]; then
-      # gh will log its own message
-      exit 3
-    fi
+  fi
+  if [ "$TAG" = "" ]; then
+    # above functions will log their own message
+    exit 3
   fi
 fi
 
@@ -111,7 +97,12 @@ fi
 
 ASSET_DIR=$(mktemp -d)
 for ASSET in $ASSETS; do
-  curl -L --silent --output "$ASSET_DIR/$ASSET" "https://github.com/$REPO/releases/download/$TAG/$ASSET"
+  ASSET_URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+  HTTP_CODE=$(curl -L --silent --output "$ASSET_DIR/$ASSET" --write-out "%{http_code}" "$ASSET_URL")
+  if [ $HTTP_CODE -ne 200 ]; then
+    error "Failed ($HTTP_CODE) while downloading asset '$ASSET' from $ASSET_URL"
+    exit 4
+  fi
 done
 
 info "Assets downloaded to $ASSET_DIR"
