@@ -7,10 +7,9 @@ A tool for installing software from GitHub releases.
 ## Setup
 
 1. Make sure `gh-release-installer` is on your `PATH`.
-2. *(Optional)* Symlink existing repository configurations for your OS to `$HOME/.gh-release-installer`.
+2. *(Optional)* Symlink existing repository configurations for to `$HOME/.gh-release-installer`.
 ```
-# for macOS
-ln -s $(pwd)/macos $HOME/.gh-release-installer
+ln -s $(pwd)/repositories $HOME/.gh-release-installer
 ```
 
 ## Usage
