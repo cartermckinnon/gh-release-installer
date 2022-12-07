@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+function usage() {
+  stderr "gh-release-installer - Easily install software from a GitHub release"
+  stderr
+  stderr "https://github.com/cartermckinnon/gh-release-installer"
+  stderr
+  stderr "usage: gh-release-installer REPOSITORY_NAME (RELEASE_TAG)"
+  stderr
+}
+
+function stderr() {
+  echo >&2 "$@"
+}
+
+function error() {
+  stderr "ERROR: $@"
+}
+
+function info() {
+  stderr "INFO: $@"
+}
+
+function get-latest-release-tag-authenticated() {
+  if [ "$#" -ne 1 ]; then
+    echo >&2 "usage: $0 REPOSITORY_NAME"
+    return 1
+  fi
+  local REPOSITORY_NAME="$1"
+  gh api "/repos/$REPOSITORY_NAME/releases" | jq -r '.[] | select(.prerelease == false) | .tag_name' | head -n1
+}
+
+function get-latest-release-tag-anonymous() {
+  if [ "$#" -ne 1 ]; then
+    stderr "usage: $0 REPOSITORY_NAME"
+    return 1
+  fi
+  local REPOSITORY_NAME="$1"
+  FAILED=false
+  OUTPUT_FILE=$(mktemp)
+  HTTP_CODE=$(curl --silent --output $OUTPUT_FILE --write-out "%{http_code}" "https://api.github.com/repos/$REPOSITORY_NAME/releases")
+  if [ ${HTTP_CODE} -eq 200 ]; then
+    cat $OUTPUT_FILE \
+      | jq -r '.[] | select(.prerelease == false) | .tag_name' \
+      | head -n1
+  elif [ $HTTP_CODE -eq 403 ]; then
+    error "GitHub API request was rate-limited; you should set up the GitHub CLI so your requests aren't anonymous!"
+  else
+    error "GitHub API request failed with status $HTTP_CODE"
+    cat >&2 $OUTPUT_FILE
+    FAILED=true
+  fi
+  rm $OUTPUT_FILE
+  if $FAILED; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
+  usage
+  exit 1
+fi
+
+REPO="$1"
+TAG="${2:-}"
+
+CONFIG_PATH="$HOME/.gh-release-installer"
+REPO_ASSETS="$CONFIG_PATH/$REPO.assets"
+REPO_INSTALL="$CONFIG_PATH/$REPO.install"
+
+if [[ ! -f "$REPO_ASSETS" ]]; then
+  error "An asset file must exist for $REPO at $REPO_ASSETS"
+  exit 2
+fi
+
+if [[ ! -f "$REPO_INSTALL" ]]; then
+  error "An installer executable must exist for $REPO at $REPO_INSTALLER"
+  exit 2
+fi
+
+if [ "$TAG" = "" ]; then
+  info "Determining the latest release..."
+  if ! command -v gh &> /dev/null; then
+    TAG=$(get-latest-release-tag-anonymous "$REPO")
+    if [ "$TAG" = "" ]; then
+      # get-latest-release-anonymous will log its own message
+      exit 3
+    fi
+  else
+    TAG=$(get-latest-release-tag-authenticated "$REPO")
+    if [ "$TAG" = "" ]; then
+      # gh will log its own message
+      exit 3
+    fi
+  fi
+fi
+
+info "The release tag $TAG will be installed!"
+
+if [ -x "$REPO_ASSETS" ]; then
+  ASSETS=$(exec "$REPO_ASSETS")
+else
+  ASSETS=$(cat "$REPO_ASSETS")
+fi
+
+ASSET_DIR=$(mktemp -d)
+for ASSET in $ASSETS; do
+  curl -L --silent --output "$ASSET_DIR/$ASSET" "https://github.com/$REPO/releases/download/$TAG/$ASSET"
+done
+
+info "Assets downloaded to $ASSET_DIR"
+
+"$REPO_INSTALL" "$TAG" "$ASSET_DIR"
+
+info "Installed!"

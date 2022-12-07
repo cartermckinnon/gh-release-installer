@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+TAG="$1"
+ASSET_DIR="$2"
+
+cd "$ASSET_DIR"
+
+sha256sum --check --ignore-missing --quiet eksctl_checksums.txt
+
+tar xzf eksctl_*.tar.gz
+
+sudo mv eksctl /usr/local/bin/eksctl

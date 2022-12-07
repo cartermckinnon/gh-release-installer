@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+PLATFORM=$(uname)
+MACHINE=$(uname -m)
+if [ "$MACHINE" = "x86_64" ]; then
+  CPU="amd64"
+elif [ "$MACHINE" = "arm64" ]; then
+  CPU="arm64"
+else
+  echo >&2 "ERROR: No CPU mapping for $MACHINE!"
+  exit 1
+fi
+
+echo "eksctl_checksums.txt"
+echo "eksctl_${PLATFORM}_${CPU}.tar.gz"
