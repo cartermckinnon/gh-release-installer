@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
+
+MACHINE=$(uname -m)
+if [ "$MACHINE" = "x86_64" ]; then
+  CPU="amd64"
+elif [ "$MACHINE" = "arm64" ]; then
+  CPU="arm64"
+else
+  echo >&2 "ERROR: No CPU mapping for $MACHINE!"
+  exit 1
+fi
+
+RELEASE_TAG="$1"
+
+# remove 'v' prefix from tag
+VERSION="${RELEASE_TAG:1}"
+
+echo "sonobuoy_${VERSION}_checksums.txt"
+echo "sonobuoy_${VERSION}_${PLATFORM}_${CPU}.tar.gz"

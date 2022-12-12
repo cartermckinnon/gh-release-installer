@@ -90,7 +90,7 @@ fi
 info "The release tag $TAG will be installed!"
 
 if [ -x "$REPO_ASSETS" ]; then
-  ASSETS=$(exec "$REPO_ASSETS")
+  ASSETS=$(exec "$REPO_ASSETS" "$TAG")
 else
   ASSETS=$(cat "$REPO_ASSETS")
 fi

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+TAG="$1"
+ASSET_DIR="$2"
+
+cd "$ASSET_DIR"
+
+PLATFORM=$(uname)
+if [ "$PLATFORM" = "Darwin" ]; then
+  SHASUM_CMD="shasum --algorithm 256"
+elif [ "$PLATFORM" = "Linux" ]; then
+  SHASUM_CMD="sha256sum"
+else
+  echo >&2 "ERROR: no shasum mapping for platform $PLATFORM!"
+  exit 1
+fi
+
+$SHASUM_CMD --check --ignore-missing --quiet sonobuoy_*_checksums.txt
+
+tar xzf sonobuoy_*.tar.gz
+
+sudo mv sonobuoy /usr/local/bin/sonobuoy
