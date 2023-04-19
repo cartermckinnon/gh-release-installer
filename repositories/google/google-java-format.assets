@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+RELEASE_TAG="$1"
+
+# remove 'v' prefix from tag
+VERSION="${RELEASE_TAG:1}"
+
+echo "google-java-format-${VERSION}-all-deps.jar"
