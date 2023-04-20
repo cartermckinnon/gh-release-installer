@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+TAG="$1"
+ASSET_DIR="$2"
+
+cd "$ASSET_DIR"
+
+tar -xzf kubernetes-*
+cd kubernetes/client/bin
+chmod a+x kubectl*
+sudo mv kubectl* /usr/local/bin/

@@ -97,7 +97,12 @@ fi
 
 ASSET_DIR=$(mktemp -d)
 for ASSET in $ASSETS; do
-  ASSET_URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+  if [[ "$ASSET" == http://* ]] || [[ "$ASSET" == https://* ]]; then
+    ASSET_URL="$ASSET"
+    ASSET=$(basename "$ASSET")
+  else
+    ASSET_URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+  fi
   HTTP_CODE=$(curl -L --silent --output "$ASSET_DIR/$ASSET" --write-out "%{http_code}" "$ASSET_URL")
   if [ $HTTP_CODE -ne 200 ]; then
     error "Failed ($HTTP_CODE) while downloading asset '$ASSET' from $ASSET_URL"
